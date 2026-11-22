@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>擇木良食｜訂單綁定</title>
+<style>
+  body{margin:0;background:#FBF7EF;font-family:-apple-system,"PingFang TC","Noto Sans TC",sans-serif;color:#2F3A2C}
+  .wrap{max-width:420px;margin:0 auto;padding:32px 20px}
+  h1{font-size:22px;color:#5E7F57;margin:0 0 6px}
+  p.sub{margin:0 0 22px;color:#55604F;font-size:14px;line-height:1.6}
+  label{display:block;font-size:16px;font-weight:700;margin:0 0 8px}
+  input{width:100%;box-sizing:border-box;font-size:18px;padding:14px;border:1px solid #D9D2C3;border-radius:12px;background:#fff}
+  .hint{font-size:13px;color:#7a857a;margin-top:6px;line-height:1.5}
+  button{width:100%;margin-top:22px;padding:15px;font-size:17px;font-weight:700;border:0;border-radius:12px;background:#5E7F57;color:#fff}
+  button:disabled{opacity:.5}
+  .msg{margin-top:16px;padding:12px;border-radius:10px;font-size:15px;line-height:1.6;display:none}
+  .ok{background:#E6F0E1;color:#3B5236}.err{background:#FBE7E2;color:#9A3A26}
+  #loading{color:#55604F;font-size:15px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>訂單綁定</h1>
+  <p class="sub" id="hello">綁定後，訂單通知和專屬服務都會透過擇木良食 LINE 傳給你。</p>
+  <p id="loading">讀取中…</p>
+
+  <form id="f" onsubmit="send(event)" style="display:none">
+    <label for="key">會員 ID 或 手機號碼</label>
+    <input id="key" inputmode="numeric" required placeholder="擇一填寫即可">
+    <div class="hint">手機請填下單時的訂購人手機；會員 ID 在活動 EDM 上</div>
+    <button id="b" type="submit">確認綁定</button>
+  </form>
+  <div id="m" class="msg"></div>
+</div>
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+  // ↓ 部署設定：LIFF ID 與 Apps Script 網址
+  var LIFF_ID = '2007733363-BemTDv5Q';
+  var API = 'https://script.google.com/macros/s/AKfycbxeF9v710xvy2QkYzuFyQAHO7dYQD2frae2dYAe389qwPojkzlHwUmsJI_47JKt96wy/exec';
+
+  var m = document.getElementById('m'), f = document.getElementById('f'), b = document.getElementById('b');
+  function show(text, ok){ m.textContent = text; m.className = 'msg ' + (ok ? 'ok' : 'err'); m.style.display = 'block'; }
+
+  liff.init({ liffId: LIFF_ID }).then(function(){
+    if (!liff.isLoggedIn()) { liff.login(); return; }
+    var p = liff.getDecodedIDToken() || {};
+    if (p.name) document.getElementById('hello').textContent = '嗨，' + p.name + '！綁定後，訂單通知和專屬服務都會透過擇木良食 LINE 傳給你。';
+    document.getElementById('loading').style.display = 'none';
+    f.style.display = 'block';
+  }).catch(function(){
+    document.getElementById('loading').style.display = 'none';
+    show('頁面載入失敗，請從擇木良食 LINE 選單的「訂單綁定」重新進入。', false);
+  });
+
+  function send(ev){
+    ev.preventDefault();
+    b.disabled = true; b.textContent = '送出中…'; m.style.display = 'none';
+    var body = JSON.stringify({ action: 'bind', idToken: liff.getIDToken(), key: document.getElementById('key').value });
+    fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: body, credentials: 'omit' })
+      .then(function(r){ return r.json(); })
+      .then(function(r){
+        show(r.msg || (r.ok ? '綁定完成！' : '綁定沒有成功，請再試一次。'), r.ok);
+        if (r.ok) f.style.display = 'none'; else { b.disabled = false; b.textContent = '確認綁定'; }
+      })
+      .catch(function(){ show('系統忙碌，請稍後再試一次。', false); b.disabled = false; b.textContent = '確認綁定'; });
+  }
+</script>
+</body>
+</html>
