@@ -63,9 +63,21 @@
       .then(function(r){ return r.json(); })
       .then(function(r){
         show(r.msg || (r.ok ? '綁定完成！' : '綁定沒有成功，請再試一次。'), r.ok);
-        if (r.ok) f.style.display = 'none'; else { b.disabled = false; b.textContent = '確認綁定'; }
+        if (r.ok) { f.style.display = 'none'; notifyChat(r.orders); } else { b.disabled = false; b.textContent = '確認綁定'; }
       })
       .catch(function(){ show('系統忙碌，請稍後再試一次。', false); b.disabled = false; b.textContent = '確認綁定'; });
+  }
+  // 綁定成功後，以客人名義在擇木良食聊天室留一句話，後台才會出現聊天室
+  function notifyChat(orders){
+    try {
+      if (!liff.isInClient()) return;
+      var ctx = liff.getContext() || {};
+      if (ctx.type !== 'utou') return;
+      var no = (orders && orders.length) ? ' #' + orders.join(' #') : '';
+      liff.sendMessages([{ type: 'text', text: '我已完成訂單綁定' + no + '（三日中碳陪跑）' }])
+        .then(function(){ setTimeout(function(){ try { liff.closeWindow(); } catch(e){} }, 1500); })
+        .catch(function(){});
+    } catch (e) {}
   }
 </script>
 </body>
